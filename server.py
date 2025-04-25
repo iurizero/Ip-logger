@@ -1,12 +1,88 @@
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import json
-import os
+import sqlite3
 from datetime import datetime
 import socket
 
+# Inicializar o banco de dados
+def init_db():
+    conn = sqlite3.connect('localizacoes.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS localizacoes
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  latitude REAL,
+                  longitude REAL,
+                  timestamp TEXT,
+                  ip TEXT,
+                  user_agent TEXT)''')
+    conn.commit()
+    conn.close()
+
 class LocationHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
-        # Servir o arquivo index.html para qualquer requisição GET
+        if self.path == '/localizacoes':
+            try:
+                conn = sqlite3.connect('localizacoes.db')
+                c = conn.cursor()
+                c.execute('SELECT * FROM localizacoes')
+                localizacoes = c.fetchall()
+                conn.close()
+
+                # Converter para lista de dicionários
+                result = []
+                for loc in localizacoes:
+                    result.append({
+                        'id': loc[0],
+                        'latitude': loc[1],
+                        'longitude': loc[2],
+                        'timestamp': loc[3],
+                        'ip': loc[4],
+                        'user_agent': loc[5]
+                    })
+
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps(result, ensure_ascii=False).encode('utf-8'))
+                return
+            except Exception as e:
+                print(f'Erro ao buscar localizações: {str(e)}')
+                self.send_error(500, 'Erro interno do servidor')
+                return
+                
+        elif self.path == '/dados':
+            try:
+                conn = sqlite3.connect('localizacoes.db')
+                c = conn.cursor()
+                c.execute('SELECT * FROM localizacoes ORDER BY timestamp DESC LIMIT 10')
+                localizacoes = c.fetchall()
+                conn.close()
+
+                # Formato diferente de retorno
+                result = {
+                    'total_registros': len(localizacoes),
+                    'ultimas_localizacoes': [
+                        {
+                            'coordenadas': f"{loc[1]}, {loc[2]}",
+                            'data_hora': loc[3],
+                            'dispositivo': loc[5]
+                        } for loc in localizacoes
+                    ]
+                }
+
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps(result, ensure_ascii=False, indent=2).encode('utf-8'))
+                return
+            except Exception as e:
+                print(f'Erro ao buscar dados: {str(e)}')
+                self.send_error(500, 'Erro interno do servidor')
+                return
+
+        # Servir o arquivo index.html para qualquer outra requisição GET
         if self.path == '/':
             self.path = '/index.html'
         return SimpleHTTPRequestHandler.do_GET(self)
@@ -21,24 +97,21 @@ class LocationHandler(SimpleHTTPRequestHandler):
                 print(f"Dados recebidos: {data}")
                 
                 # Adiciona informações extras
-                data['timestamp'] = datetime.now().isoformat()
-                data['ip'] = self.client_address[0]
-                data['user_agent'] = self.headers.get('User-Agent', 'Desconhecido')
+                timestamp = datetime.now().isoformat()
+                ip = self.client_address[0]
+                user_agent = self.headers.get('User-Agent', 'Desconhecido')
                 
-                # Carrega localizações existentes
-                localizacoes = []
-                if os.path.exists('localizacoes.json'):
-                    with open('localizacoes.json', 'r', encoding='utf-8') as f:
-                        localizacoes = json.load(f)
+                # Salva no banco de dados
+                conn = sqlite3.connect('localizacoes.db')
+                c = conn.cursor()
+                c.execute('''INSERT INTO localizacoes 
+                            (latitude, longitude, timestamp, ip, user_agent)
+                            VALUES (?, ?, ?, ?, ?)''',
+                         (data['latitude'], data['longitude'], timestamp, ip, user_agent))
+                conn.commit()
+                conn.close()
                 
-                # Adiciona nova localização
-                localizacoes.append(data)
-                
-                # Salva no arquivo
-                with open('localizacoes.json', 'w', encoding='utf-8') as f:
-                    json.dump(localizacoes, f, indent=2, ensure_ascii=False)
-                
-                print(f"Localização salva com sucesso. Total: {len(localizacoes)}")
+                print("Localização salva com sucesso")
                 
                 # Responde com sucesso
                 self.send_response(200)
@@ -48,7 +121,6 @@ class LocationHandler(SimpleHTTPRequestHandler):
                 self.send_header('Access-Control-Allow-Headers', 'Content-Type')
                 self.end_headers()
                 
-                # Garante que a resposta seja um JSON válido
                 response_data = json.dumps({'success': True, 'message': 'Localização salva com sucesso'})
                 self.wfile.write(response_data.encode('utf-8'))
                 
@@ -70,6 +142,9 @@ class LocationHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
 def run(server_class=HTTPServer, handler_class=LocationHandler, port=8000):
+    # Inicializar o banco de dados
+    init_db()
+    
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
     print(f'Servidor rodando em http://localhost:{port}')
